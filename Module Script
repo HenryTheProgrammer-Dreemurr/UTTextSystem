@@ -1,0 +1,278 @@
+local textModule = {}
+local TS = game:GetService("TweenService")
+
+type defaultParameters = {
+	Label :string,
+	Color : Color3,
+	BackColor: Color3,
+	ColorAnimation: boolean,
+	Char : Model?,
+	Clear : boolean,
+	Slowed : boolean,
+	StrokeEnabled : boolean,
+	StrokeTransparency: number,
+	StrokeColor : Color3,
+	BackStrokeColor: Color3,
+	SpecialFunction: string,
+	Vanish: boolean,
+	Voice: string,
+	FontName: string
+}
+
+local DefaultValues : defaultParameters = {
+
+	Label = " ",
+	Color = Color3.fromRGB(255, 255, 255),
+	BackColor = Color3.fromRGB(),
+	ColorAnimation = true,
+	Char = nil,
+	Clear = true,
+	Slowed = false,
+	StrokeEnabled = false,
+	StrokeTransparency = 1,
+	StrokeColor = Color3.fromRGB(255, 255, 255),
+	BackStrokeColor = Color3.fromRGB(255, 255, 255),
+	SpecialFunction = "None",
+	Vanish = false,
+	Voice = "Default",
+	FontName = "PressStart2P"
+	
+}
+
+local VoiceList = {
+	["Default"] = {"rbxassetid://87993498856359", 14.9},
+	["Sans"] = {"rbxassetid://358280695", 0},
+	["Evil Flowey"] = {"rbxassetid://94623052388659", 14.5}, 
+	["Gaster"] = {"rbxassetid://4742745849", .9}
+}
+
+function textModule.ExecuteText(data: defaultParameters)
+	
+	for k, v in DefaultValues do
+		
+		if data[k] == nil then 
+			data[k] = v	
+		end
+		
+	end
+
+	textModule.CreateNewTextLabel(data.Char)
+
+	if data.Clear == true then
+
+		for i, v in pairs(data.Char.HumanoidRootPart.TextAttach.BillboardGui.TextBox.TextFrame:GetChildren()) do
+
+			if v.Name == "Clone" then
+
+				v:Destroy()
+
+			end
+
+		end
+
+	end
+
+	for i = 1, #data.Label do
+
+		newSetText(data, i)
+
+	end
+
+end
+
+function textModule.ClearExistingTexts(char)
+	for i, v in pairs(char:GetDescendants()) do
+
+		if v.Name == "TextAttach" then
+
+			v:Destroy()
+
+		end
+
+	end
+end
+
+function newSetText(data: defaultParameters, i)
+	
+	local letterDefault = data.Char.HumanoidRootPart.TextAttach.BillboardGui.LetterDEFAULT
+
+	local newTextBox = letterDefault:Clone()
+	local newLabel: TextLabel = newTextBox.TextLabel
+	local newBackLabel = newTextBox.Two
+
+	newLabel.TextTransparency = 1
+	newBackLabel.TextTransparency = 1
+	newTextBox.Visible = true
+	newTextBox.Parent = data.Char.HumanoidRootPart.TextAttach.BillboardGui.TextBox.TextFrame
+	newTextBox.Name = "Clone"
+	
+	newLabel.FontFace = Font.fromName(data.FontName)
+	newBackLabel.FontFace = Font.fromName(data.FontName)
+	
+	newLabel.Visible = true
+	newBackLabel.Visible = true
+	newLabel.TextStrokeTransparency = 1
+	newLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	newLabel.Text = string.sub(data.Label, i, i)
+	newBackLabel.Text = newLabel.Text
+
+	local duration = startLabelAnimation(newBackLabel, newLabel)
+	SoundEffect(data.Voice)
+	-- add stroke anim late and back label thing and no animation for stroke
+	if not data.ColorAnimation then newLabel.TextColor3 = data.Color newLabel.TextStrokeColor3 = data.StrokeColor else
+		task.delay(duration, function()
+			TS:Create(newLabel, TweenInfo.new(1.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {TextColor3 = data.Color, TextStrokeColor3 = data.StrokeColor}):Play()
+			TS:Create(newBackLabel, TweenInfo.new(1.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {TextColor3 = data.BackColor, TextStrokeColor3 = data.BackStrokeColor}):Play()
+			if data.StrokeEnabled == true then TS:Create(newLabel, TweenInfo.new(1.5), {TextStrokeTransparency = .5}):Play() end
+		end)
+	end
+
+	if string.sub(data.Label, i, i) == "." or string.sub(data.Label, i, i) == "," then
+
+		wait(.7)
+
+	elseif data.Slowed == true then
+
+		wait(.155)
+
+	else
+
+		wait(0.04)
+
+	end
+	
+	local function createTween(instance, lenght, increase)
+
+		task.delay(lenght, function()
+
+			TS:Create(instance, TweenInfo.new(lenght, Enum.EasingStyle.Back, Enum.EasingDirection.InOut, -1, true, 0), {Position = instance.Position + UDim2.new(0, 0, increase * 2, 0)}):Play()
+
+		end)
+
+	end
+	
+	if data.SpecialFunction == "WeakShake" then
+		
+		coroutine.resume(coroutine.create(function()
+			
+			local lenght = 1.5
+			local increase = .1
+			
+			createTween(newLabel, lenght, increase)
+			createTween(newBackLabel, lenght, increase)
+			
+		end))
+		
+	elseif data.SpecialFunction == "MediumShake" then
+		
+		coroutine.resume(coroutine.create(function()
+
+			local lenght = .5
+			local increase = .1
+
+			createTween(newLabel, lenght, increase)
+			createTween(newBackLabel, lenght, increase)
+
+		end))	
+		
+	elseif data.SpecialFunction == "HardShake" then
+
+		coroutine.resume(coroutine.create(function()
+
+			local lenght = .1
+			local increase = .1
+			
+			task.delay(duration, function()
+
+				createTween(newLabel, lenght, increase)
+				createTween(newBackLabel, lenght, increase)
+				
+			end)
+			
+		end))	
+		
+	end
+	
+	--if data.Vanish == true then
+
+	--	task.delay(2, function()
+
+	--		endLabelAnimation(newBackLabel, newLabel)
+	--		game.Debris:AddItem(newTextBox, 2)
+
+	--	end)
+
+	--end
+	
+end
+
+function textModule.CreateNewTextLabel(char)
+
+	if not char.HumanoidRootPart:FindFirstChild("TextAttach") then
+
+		local textAttachClone = game:GetService("ReplicatedStorage").Text.TextAttach:Clone()
+		textAttachClone.Parent = char.HumanoidRootPart
+		textAttachClone.CFrame = textAttachClone.CValue.Value
+
+	end
+
+end
+
+function SoundEffect(Voice)
+
+	local Sound = Instance.new("Sound", workspace.FX)
+	Sound.Name = "TextSound"
+	Sound.SoundId = VoiceList[Voice][1] -- "http://www.roblox.com/asset/?id=3333976425"
+	Sound.PlaybackSpeed = 1
+	Sound.Volume = 1
+	Sound.TimePosition = VoiceList[Voice][2]
+	Sound:Play()
+	coroutine.resume(coroutine.create(function()
+		wait(4)
+		Sound:Destroy()
+	end))
+
+end
+
+function startLabelAnimation(newBackLabel, newLabel)
+	
+	local duration = .3
+	
+	TS:Create(newBackLabel, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+		TextTransparency = 0,
+		TextStrokeTransparency = 0.38,
+		Position = UDim2.new(-3.111, 0, -0.173, 0),
+		Size = UDim2.new(8.079, 0, 1.243, 0),
+		Rotation = 0}):Play()
+
+
+	TS:Create(newLabel, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+		TextTransparency = 0,
+		Position = UDim2.new(-3.339, 0, -0.209, 0),
+		Size = UDim2.new(8.079, 0, 1.243, 0),
+		Rotation = 0}):Play()
+	
+	return duration
+	
+end
+
+function endLabelAnimation(newBackLabel, newLabel)
+	
+	TS:Create(newBackLabel, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+		Position = UDim2.new(0.024, 0, 0.182, 0),
+		Size = UDim2.new(0.023, 0, 0.209, 0),
+		Rotation = 57}):Play()
+
+
+	TS:Create(newLabel, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+		Position = UDim2.new(0.024, 0, 0.182, 0),
+		Size = UDim2.new(0.023, 0, 0.209, 0),
+		Rotation = 57}):Play()
+	
+end
+
+return textModule
